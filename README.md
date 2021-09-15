@@ -1,3 +1,3 @@
 # Westworld
 
-The source code and datasets are coming soon!
+The source code and datasets will be made available by the time the paper is presented.
