@@ -1,0 +1,6 @@
+getCurrentMode Mode
+getHubs List
+getLatitude BigDecimal
+getLongitude BigDecimal
+getModes List
+getTimeZone TimeZone

@@ -1,0 +1,6 @@
+id String
+name String
+value String
+doubleValue Number
+latestValue String
+integerValue Number

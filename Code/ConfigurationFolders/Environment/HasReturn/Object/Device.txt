@@ -1,0 +1,17 @@
+currentTemperature Unknown
+currentState State
+currentSwitch Unknown
+currentCarbonMonoxide Unknown
+currentValue Unknown
+events List
+eventsBetween List
+eventsSince List
+getCapabilities List
+getHub Hub
+getLastActivity Date
+getSupportedAttributes List
+getSupportedCommands List
+latestState State
+latestValue Unknown
+statesBetween List
+statesSince List

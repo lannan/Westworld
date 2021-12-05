@@ -1,0 +1,7 @@
+getDate Date
+getDateValue Date
+getDevice Device
+getJsonValue Unknown
+getLocation Location
+getLongValue Long
+getXyzValue Map
