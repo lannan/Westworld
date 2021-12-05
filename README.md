@@ -26,7 +26,7 @@ How to run the fuzzing tool:
 
 
 
-*How to modify the selenium part:
+*Modifying the selenium part:
 
-The web page of SmartThings changes frequently. That means the tags of the html code may be changed. Selenium uses tags to locate the smart app inputs. Thus, we need to modify the selenium part to follow the new tags of the web page to locate the inputs. Please read the code of the selenium part to understand which part needs to be modified.
+The web page of SmartThings changes frequently. That means the tags of the html code could be changed. Selenium uses tags to locate the smart app inputs. Thus, we need to modify the selenium part to follow the new tags of the web page to locate the app inputs. Please read the code of the selenium part to understand which part needs to be modified.
 
