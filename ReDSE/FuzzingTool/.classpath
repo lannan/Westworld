@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-11">
+		<attributes>
+			<attribute name="module" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="con" path="GROOVY_SUPPORT"/>
+	<classpathentry kind="con" path="GROOVY_DSL_SUPPORT"/>
+	<classpathentry kind="lib" path="libary/commons-cli-1.4.jar"/>
+	<classpathentry kind="lib" path="libary/jline-2.13.jar"/>
+	<classpathentry kind="lib" path="libary/selenium-server-standalone-3.0.1.jar"/>
+	<classpathentry kind="lib" path="C:/Users/Bokai/Desktop/eclipse-workspace/IoTConcolicTool2-PathExploreImprovement/libary/z3-4.8.4.d6df51951f4c-x64-win/bin/com.microsoft.z3.jar"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>
