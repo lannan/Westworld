@@ -5,7 +5,7 @@ The programs included here were created for the following paper:
 Lannan Luo (University of South Carolina), Qiang Zeng (University of South Carolina), Bokai Yang (University of South Carolina), Fei Zuo (University of South Carolina), Junzhe Wang (University of South Carolina)
 
 
-# remoteSE
+# Westworld
 How to run the symbolic tool:
 1. import the project into eclipse or intellij. 
 2. import all the jar files in the libary folder (the folder library is under the source folder).
