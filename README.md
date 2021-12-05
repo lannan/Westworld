@@ -1,4 +1,4 @@
-The programs included here were created for the following paper:
+This repo was created for the following paper:
 
 "Westworld: Fuzzing-Assisted Remote Dynamic Symbolic Execution of Smart Apps on IoT Cloud Platforms"
 
