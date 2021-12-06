@@ -39,7 +39,12 @@ def switchOn(evt) {
         switches?.on()
 }
 def switchOff(evt) {
-	log.debug "Switches Off"
-        switches?.off()
+        def loc = getLocation()
+	def curMode = loc.getCurrentMode()
+	
+	if(curMode == "Home" ){
+		log.debug "Switches Off"
+        	switches?.off()
+        }
 }
 

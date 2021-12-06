@@ -34,5 +34,11 @@ def updated()
 }
 
 def motionInactiveHandler(evt) {
-	switch1.off()
+	def loc = getLocation()
+	def curMode = loc.getCurrentMode()
+	
+	if(curMode == "Home") {
+	
+		switch1.off()
+	}
 }

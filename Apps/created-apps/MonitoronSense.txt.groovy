@@ -45,7 +45,13 @@ def updated() {
 
 
 def accelerationActiveHandler(evt) {
+       def loc = getLocation()
+	def curMode = loc.getCurrentMode()
+	
+	if(curMode == "Home" ){
+
 		switch1.on()
 	}
+}
 
 

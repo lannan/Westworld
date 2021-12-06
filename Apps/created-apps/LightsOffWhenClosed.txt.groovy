@@ -33,5 +33,10 @@ def updated()
 }
 
 def contactClosedHandler(evt) {
+  	       def loc = getLocation()
+	def curMode = loc.getCurrentMode()
+	
+	if(curMode == "Home" ){
 	switch1.off()
+	}
 }

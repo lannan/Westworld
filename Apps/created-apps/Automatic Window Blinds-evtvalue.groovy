@@ -67,13 +67,19 @@ def activateBlinds(evt) {
 		raiseBlinds = false
 	}
 	
-	if(blindsState < impossibleVal){
+	def loc = getLocation()
+	def curMode = loc.getCurrentMode()
+	
+	if(curMode != "Home" && blindsState < impossibleVal){
 		blinds.off()
 	}
 	
 	
-	if(raiseBlinds){
+	if(curMode == "Home" && raiseBlinds){
 		blinds.on()
 	}
+	
+	
+	
 
 }
