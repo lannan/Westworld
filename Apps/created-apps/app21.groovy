@@ -13,64 +13,119 @@ definition(
 
 
 preferences {
-	section("Monitor the humidity of:") {
-		input "humiditySensor1", "capability.relativeHumidityMeasurement"
-	}
-	section("input1:") {
-		input "input1", "number", title: "integer ?"
-	}
-	section("input2:") {
-		input "input2", "number", title: "integer ?"
-	}
-	section( "Notifications" ) {
-		input "phone1", "phone", title: "Send a Text Message?", required: false
-	}
-	section("Control this switch:") {
-		input "switch1", "capability.switch", required: true
-	}
+
+  if (!(location.zipCode || ( location.latitude && location.longitude )) && location.channelName == 'samsungtv') {
+        section { paragraph title: "Note:", "Location is required for this SmartApp. Go to 'Location Name' settings to setup your correct location." }
+    }
+
+    section( "Set the temperature range for your comfort zone..." ) {
+        input "minTemp", "number", title: "Minimum temperature"
+        input "maxTemp", "number", title: "Maximum temperature"
+    }
+    section( "Select windows to check..." ) {
+        input "sensors", "capability.contactSensor", multiple: true
+    }
+    section( "Select temperature devices to monitor..." ) {
+        input "inTemp", "capability.temperatureMeasurement", title: "Indoor"
+        input "outTemp", "capability.temperatureMeasurement", title: "Outdoor (optional)", required: false
+    }
+
+    if (location.channelName != 'samsungtv') {
+        section( "Set your location" ) { input "zipCode", "text", title: "Zip code" }
+    }
+
+    section( "Notifications" ) {
+        input "sendPushMessage", "enum", title: "Send a push notification?", metadata:[values:["Yes","No"]], required:false
+        input "retryPeriod", "number", title: "Minutes between notifications:"
+    }
 }
 
 def installed() {
-	subscribe(humiditySensor1, "humidity", humidityHandler)
+    log.debug "Installed: $settings"
+    subscribe( inTemp, "temperature", temperatureHandler )
 }
 
 def updated() {
-	unsubscribe()
-	subscribe(humiditySensor1, "humidity", humidityHandler)
+    log.debug "Updated: $settings"
+    unsubscribe()
+    subscribe( inTemp, "temperature", temperatureHandler )
 }
 
-def humidityHandler(evt) {
-	
-	def a = input1;
-	
-	def b = input2;
-	
-	def f = a + b;
-	
-	f = f * 5;
-	
-	def g = evt.value
-	
-	if(a>b)
-	{
-		if(f>a)
-		{
-			f = 20;
-		}
-		if(g == "25") 
-		{
-			f = 25;
-		}
-	}
-	
-	if(f == 20)
-	{
-		sendSms( phone1, "good" )
-		switch1.on();
-	}
-	else
-	{
-	}
-	
-	
+def temperatureHandler(evt) {
+    def currentOutTemp = null
+    if ( outTemp ) {
+        currentOutTemp = outTemp.latestValue("temperature")
+    } else {
+        log.debug "No external temperature device set. Checking The Weather Company..."
+        currentOutTemp = weatherCheck()
+    }
+
+    def currentInTemp = evt.doubleValue
+    def openWindows = sensors.findAll { it?.latestValue("contact") == 'open' }
+
+    if (!retryPeriod) {
+        def retryPeriod = 30
+    }
+    
+    def timeAgo = new Date(now() - (1000 * 60 * retryPeriod).toLong())
+    def recentEvents = inTemp.eventsSince(timeAgo)
+    log.trace "Found ${recentEvents?.size() ?: 0} events in the last $retryPeriod minutes"
+
+    if ( currentInTemp > minTemp && currentInTemp < maxTemp ) {
+        log.info "In comfort zone: $currentInTemp is between $minTemp and $maxTemp."
+        log.debug "No notifications sent."
+    } else if ( currentInTemp > maxTemp ) {
+
+        def alreadyNotified = recentEvents.count { it.doubleValue > currentOutTemp } > 1
+
+        if ( !alreadyNotified ) {
+            if ( currentOutTemp < maxTemp && !openWindows ) {
+                send( "Open some windows to cool down the house! Currently ${currentInTemp}°F inside and ${currentOutTemp}°F outside." )
+            } else if ( currentOutTemp > maxTemp && openWindows ) {
+                send( "It's gotten warmer outside! You should close these windows: ${openWindows.join(', ')}. Currently ${currentInTemp}°F inside and ${currentOutTemp}°F outside." )
+            } else {
+                log.debug "No notifications sent. Everything is in the right place."
+            }
+        } else {
+            log.debug "Already notified! No notifications sent."
+        }
+    } else if ( currentInTemp < minTemp ) {
+        def alreadyNotified = recentEvents.count { it.doubleValue < currentOutTemp } > 1
+        if ( !alreadyNotified ) {
+            if ( currentOutTemp > minTemp && !openWindows ) {
+                send( "Open some windows to warm up the house! Currently ${currentInTemp}°F inside and ${currentOutTemp}°F outside." )
+            } else if ( currentOutTemp < minTemp && openWindows ) {
+                send( "It's gotten colder outside! You should close these windows: ${openWindows.join(', ')}. Currently ${currentInTemp}°F inside and ${currentOutTemp}°F outside." )
+            } else {
+                log.debug "No notifications sent. Everything is in the right place."
+            }
+        } else {
+            log.debug "Already notified! No notifications sent."
+        }
+    }
+}
+
+def weatherCheck() {
+    def obs = getTwcConditions(zipCode)
+    def currentTemp = obs.temperature
+    if ( currentTemp ) {
+        log.trace "Temp: $currentTemp (The Weather Company)"
+        return currentTemp
+    } else {
+        log.warn "Did not get a temp: $obs"
+        return false
+    }
+}
+
+private send(msg) {
+    if (sendPushMessage != "No" ) {
+        log.debug( "sending push message" )
+        sendPush( msg )
+        sendEvent(linkText:app.label, descriptionText:msg, eventType:"SOLUTION_EVENT", displayed: true, name:"summary")
+    }
+    if ( phone1 ) {
+        log.debug( "sending text message" )
+        sendSms( phone1, msg )
+    }
+    log.info msg
 }

@@ -1,62 +1,60 @@
 /**
- *  Test for paths with systemAPI
+ *  Test app
  */
-definition(
+ 
+ definition(
 	name: "? paths",
 	namespace: "tests",
 	author: "boubou",
-	description: "Test for paths",
-	category: "Convenience",
+	description: "Test app",
+    category: "Convenience",
 	iconUrl: "https://graph.api.smartthings.com/api/devices/icons/st.Weather.weather9-icn",
 	iconX2Url: "https://graph.api.smartthings.com/api/devices/icons/st.Weather.weather9-icn?displaySize=2x"
 )
 
-
 preferences {
-	section("Monitor the humidity of:") {
-		input "humiditySensor1", "capability.relativeHumidityMeasurement"
+	section("When the door opens") {
+		input "contact1", "capability.contactSensor", title: "Where?"
 	}
+	section("Turn off a light") {
+		input "switch1", "capability.switch"
+	}
+	
 	section("input1:") {
 		input "input1", "number", title: "integer ?"
 	}
-	section( "Notifications" ) {
-		input "phone1", "phone", title: "Send a Text Message?", required: false
-	}
+	
 	section("Control this switch:") {
 		input "switch1", "capability.switch", required: true
 	}
 }
 
 def installed() {
-	subscribe(humiditySensor1, "humidity", humidityHandler)
+	subscribe(contact1, "contact", contactHandler)
 }
 
 def updated() {
 	unsubscribe()
-	subscribe(humiditySensor1, "humidity", humidityHandler)
+	subscribe(contact1, "contact", contactHandler)
 }
 
-def humidityHandler(evt) {
-	
-	def a = input1;
-	
-	def b = 5;
-	
-	def f = a * b;
-	
-	if(a < f)
-	{
-		if(f > 5)
-		{
-			f = 20;
-		}
+def contactHandler(evt) {
+	log.debug "$evt.value"
+	if (evt.value == "open") {
+        state.wasOn = switch1.currentValue("switch") == "on"
+		switch1.off()
+	}	
+
+	if (evt.value == "closed") {
+		if(state.wasOn)switch1.on()
 	}
 	
-	if(f == 20)
+	def loc = getLocation()
+	def curMode = loc.getCurrentMode()
+	
+	if(curMode == "Home")
 	{
-		sendSms( phone1, "good" )
 		switch1.on();
-	}
-	
-	
+	}	
 }
+

@@ -52,7 +52,7 @@ def foo (a, b) {
 
 def humidityHandler(evt) {
 	
-        def s = getSunriseAndSunset(zipCode: zipCode, sunriseOffset: sunriseOffset, sunsetOffset: sunsetOffset)
+    def s = getSunriseAndSunset(zipCode: zipCode, sunriseOffset: sunriseOffset, sunsetOffset: sunsetOffset)
 
 	def now = new Date()
 	def riseTime = s.sunrise
@@ -60,7 +60,7 @@ def humidityHandler(evt) {
 	
 	def e = input1 + 10;
        
-        def loc = getLocation()
+    def loc = getLocation()
 	def curMode = loc.getCurrentMode()
 	
 	if(now() > riseTime.time && curMode == "Home")

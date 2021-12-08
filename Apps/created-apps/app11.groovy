@@ -1,68 +1,125 @@
 /**
- *  Test for paths with systemAPI
+ *  Test apps
  */
+ 
 definition(
-	name: "? paths",
-	namespace: "tests",
-	author: "boubou",
-	description: "Test for paths",
-	category: "Convenience",
-	iconUrl: "https://graph.api.smartthings.com/api/devices/icons/st.Weather.weather9-icn",
-	iconX2Url: "https://graph.api.smartthings.com/api/devices/icons/st.Weather.weather9-icn?displaySize=2x"
+    name: "Working From Home",
+    namespace: "com.sudarkoff",
+    author: "George Sudarkoff",
+    description: "If after a particular time of day a certain person is still at home, trigger a 'Working From Home' action.",
+    category: "Mode Magic",
+    iconUrl: "https://s3.amazonaws.com/smartapp-icons/ModeMagic/Cat-ModeMagic.png",
+    iconX2Url: "https://s3.amazonaws.com/smartapp-icons/ModeMagic/Cat-ModeMagic@2x.png",
+    pausable: true
 )
 
-
 preferences {
-	section("Monitor the humidity of:") {
-		input "humiditySensor1", "capability.relativeHumidityMeasurement"
-	}
-	section("input1:") {
-		input "input1", "number", title: "integer ?"
-	}
-	section("input2:") {
-		input "input2", "number", title: "integer ?"
-	}
-	section( "Notifications" ) {
-		input "phone1", "phone", title: "Send a Text Message?", required: false
-	}
-	section("Control this switch:") {
-		input "switch1", "capability.switch", required: true
-	}
+    page (name:"configActions")
+}
+
+def configActions() {
+    dynamicPage(name: "configActions", title: "Configure Actions", uninstall: true, install: true) {
+        section ("When this person") {
+            input "person", "capability.presenceSensor", title: "Who?", multiple: false, required: true
+        }
+        section ("Still at home past") {
+            input "timeOfDay", "time", title: "What time?", required: true
+        }
+
+		section("Control this switch:") {
+			input "input1", "number", title: "integer ?"
+			input "input2", "number", title: "integer ?"
+			input "switch1", "capability.switch", required: true
+		}
+		
+        def phrases = location.helloHome?.getPhrases()*.label
+        if (phrases) {
+            phrases.sort()
+            section("Perform this action") {
+                input "wfhPhrase", "enum", title: "\"Hello, Home\" action", required: true, options: phrases
+            }
+        }
+
+        section (title: "More options", hidden: hideOptions(), hideable: true) {
+            input "sendPushMessage", "bool", title: "Send a push notification?"
+            input "phone", "phone", title: "Send a Text Message?", required: false
+            input "days", "enum", title: "Set for specific day(s) of the week", multiple: true, required: false,
+                options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+        }
+
+        section([mobileOnly:true]) {
+            label title: "Assign a name", required: false
+            mode title: "Set for specific mode(s)", required: false
+        }
+    }
 }
 
 def installed() {
-	subscribe(humiditySensor1, "humidity", humidityHandler)
+    initialize()
 }
 
 def updated() {
-	unsubscribe()
-	subscribe(humiditySensor1, "humidity", humidityHandler)
+    unschedule()
+    initialize()
 }
 
-def humidityHandler(evt) {
-	
-	def a = input1;
-	
-	def b = input2;
-	
-	def f = a - b;
-	
-	f = f * 5;
-
-	
-	if(a>b)
-	{
-		if(f==10)
-		{
-			f = 20;
-		}
-	}
-	
-	if(f == 20)
-	{
-		sendSms( phone1, "good" )
-		switch1.on();
-	}
-	
-	
+def initialize() {
+    schedule(timeToday(timeOfDay, location?.timeZone), "checkPresence")
+    if (customName) {
+      app.setTitle(customName)
+    }
 }
+
+def checkPresence() {
+    if (daysOk && modeOk) {
+        if (person.latestValue("presence") == "present") {
+            log.debug "${person} is present, triggering WFH action."
+            location.helloHome.execute(settings.wfhPhrase)
+            def message = "${location.name} executed '${settings.wfhPhrase}' because ${person} is home."
+            send(message)
+        }
+    }
+    
+    if (inputs1 > input2) {
+    	switch1.on()
+    }
+}
+
+private send(msg) {
+    if (sendPushMessage != "No") {
+        sendPush(msg)
+    }
+
+    if (phone) {
+        sendSms(phone, msg)
+    }
+
+    log.debug msg
+}
+
+private getModeOk() {
+    def result = !modes || modes.contains(location.mode)
+    result
+}
+
+private getDaysOk() {
+    def result = true
+    if (days) {
+        def df = new java.text.SimpleDateFormat("EEEE")
+        if (location.timeZone) {
+            df.setTimeZone(location.timeZone)
+        }
+        else {
+            df.setTimeZone(TimeZone.getTimeZone("America/Los_Angeles"))
+        }
+        def day = df.format(new Date())
+        result = days.contains(day)
+    }
+    result
+}
+
+private hideOptions() {
+    (days || modes)? false: true
+}
+
+
