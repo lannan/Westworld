@@ -2,7 +2,7 @@
  *  Test for paths with systemAPI
  */
 definition(
-	name: "paths2",
+	name: "paths1",
 	namespace: "tests",
 	author: "boubou",
 	description: "Test for paths",
@@ -28,64 +28,82 @@ preferences {
 	section("Control this switch:") {
 		input "switch1", "capability.switch", required: true
 	}
+	
+	section("People to watch for?") {
+    input "people", "capability.presenceSensor", multiple: true
+  }
+
+  section("Front Door?") {
+    input "sensors", "capability.contactSensor", multiple: true
+  }
+
+  section("Hall Light?") {
+    input "lights", "capability.switch", title: "Switch Turned On", multilple: true
+  }
+
+  section("Presence Delay (defaults to 30s)?") {
+    input name: "presenceDelay", type: "number", title: "How Long?", required: false
+  }
+
+  section("Door Contact Delay (defaults to 10s)?") {
+    input name: "contactDelay", type: "number", title: "How Long?", required: false
+  }
 }
 
+
 def installed() {
-	subscribe(humiditySensor1, "humidity", humidityHandler)
+  init()
+  subscribe(humiditySensor1, "humidity", humidityHandler)
 }
 
 def updated() {
-	unsubscribe()
-	subscribe(humiditySensor1, "humidity", humidityHandler)
+  unsubscribe()
+  init()
 }
 
-def humidityHandler(evt) {
-	
-	def a = input1;
-	
-	def b = input2;
-	
-	def d =  a * b;
-	
-	def e = d + 10;
+def init() {
+  state.lastClosed = now()
+  subscribe(people, "presence.present", presence)
+  subscribe(sensors, "contact.open", doorOpened)
+}
 
+def presence(evt) {
+  def delay = contactDelay ?: 10
+
+  state.lastPresence = now()
+
+  if(now() - (delay * 1000) < state.lastContact) {
+    log.info('Presence was delayed, but you probably still want the light on.')
+    lights?.on()
+  }
+  
+  def loc = getLocation()
 	
-	if(a>e)
-	{
-		if(b>e)
-		{
-			b = 20;
-		}
-	}
+  def curMode = loc.getCurrentMode()
 	
-	if(d > 15)
-	{
-		if(a>e)
-		{
-			d = 25;
-		}
-        
-        else{
-        	d = 24
-        }
+  if(contactDelay == input1 * input2){
+    	sendSms( phone1, "good" )
+		switch1.on();  
+  }
+  else 
+  {
+	if (curMode == "Home") {
+		sendSms( phone1, "bad" )
+		switch1.off();
 	}
-	
-	if(d == 20)
-	{
-		sendSms( phone1, "good" )
-		switch1.on();
-	}
-	else
-	{
-		if(d >= 25)
-		{
-			sendSms( phone1, "normal" )
-		}
-		else
-		{
-			sendSms( phone1, "bad" )
-			switch1.off();
-		}
-	}
+  }
 	
 }
+
+def doorOpened(evt) {
+  def delay = presenceDelay ?: 30
+
+  state.lastContact = now()
+
+  if(now() - (delay * 1000) < state.lastPresence) {
+    log.info('Welcome home!  Let me get that light for you.')
+    lights?.on()
+  }
+}
+
+

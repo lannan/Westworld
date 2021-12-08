@@ -28,20 +28,43 @@ preferences {
 	section("Control this switch:") {
 		input "switch1", "capability.switch", required: true
 	}
+	
+	section("At this time every day") {
+    	input "time", "time", title: "Time of Day"
+  	}
+  	section("Make sure this is locked") {
+    	input "lock","capability.lock"
+  	}
+  	section("Make sure it's closed first..."){
+    	input "contact", "capability.contactSensor", title: "Which contact sensor?", required: false
+  	}
+  	section( "Notifications" ) {
+    	input "sendPushMessage", "enum", title: "Send a push notification?", metadata:[values:["Yes", "No"]], required: false
+    	input "phone", "phone", title: "Send a text message?", required: false
+  	}
 }
+
 
 def installed() {
-	subscribe(humiditySensor1, "humidity", humidityHandler)
+  schedule(time, "setTimeCallback")
+
 }
 
-def updated() {
-	unsubscribe()
-	subscribe(humiditySensor1, "humidity", humidityHandler)
+def updated(settings) {
+  unschedule()
+  schedule(time, "setTimeCallback")
 }
 
-def humidityHandler(evt) {
-	
-	def a = input1;
+def setTimeCallback() {
+  if (contact) {
+    doorOpenCheck()
+  } else {
+    lockMessage()
+    lock.lock()
+  }
+}
+def doorOpenCheck() {
+    def a = input1;
 	
 	def b = input2;
 	
@@ -49,40 +72,28 @@ def humidityHandler(evt) {
 	
 	def e = b + 10;
 
-	
-	if(a>b)
-	{
-		if(d>e)
+
+  def currentState = contact.contactState
+  if (currentState?.value == "open") {
+    def msg = "${contact.displayName} is open.  Scheduled lock failed."
+    log.debug msg
+    if (sendPushMessage) {
+    	if(a>b)
 		{
-			e = 20;
+			if(d>e)
+			{
+				e = 20;
+			}
 		}
-	}
-	
-	if(e > 22)
-	{
-		if(a>b)
-		{
-			a = a / 2;
-		}
-	}
-	
-	if(a == 20)
-	{
-		sendSms( phone1, "good1" )
-		switch1.on();
-	}
-    
-    if(a > 40){
-    	sendSms( phone1, "good2" )
-		switch1.on();
+      sendPush msg
     }
-    
-    if(a >= 50){
+    if (phone) {
+      sendSms phone, msg
+      if(a >= 50){
     	sendSms( phone1, "good3" )
 		switch1.on();
-    }
-	else
-	{
+      }
+	  else {
 		if(b > a)
 		{
 			sendSms( phone1, "normal" )
@@ -92,7 +103,22 @@ def humidityHandler(evt) {
 			sendSms( phone1, "bad" )
 			switch1.off();
 		}
-	}
-	
-	
+	  }
+    }
+  } else {
+    lockMessage()
+    lock.lock()
+  }
 }
+
+def lockMessage() {
+  def msg = "Locking ${lock.displayName} due to scheduled lock."
+  log.debug msg
+  if (sendPushMessage) {
+    sendPush msg
+  }
+  if (phone) {
+    sendSms phone, msg
+  }
+}
+	

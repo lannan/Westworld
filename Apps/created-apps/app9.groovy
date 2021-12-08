@@ -43,7 +43,7 @@ def updated() {
 
 def humidityHandler(evt) {
 	
-        def s = getSunriseAndSunset(zipCode: zipCode, sunriseOffset: sunriseOffset, sunsetOffset: sunsetOffset)
+    def s = getSunriseAndSunset(zipCode: zipCode, sunriseOffset: sunriseOffset, sunsetOffset: sunsetOffset)
 
 	def now = new Date()
 	def riseTime = s.sunrise

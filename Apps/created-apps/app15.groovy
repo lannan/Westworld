@@ -80,7 +80,7 @@ def humidityHandler(evt) {
     def timeAgo = new Date(now() - (1000 * 60 * deltaMinutes).toLong())
 	def recentEvents = humiditySensor1.eventsSince(timeAgo)
 	log.trace "Found ${recentEvents?.size() ?: 0} events in the last ${deltaMinutes} minutes"
-	def alreadySentSms = recentEvents.count { Double.parseDouble(it.value.replace("%", "")) >= tooHumid } > 1 || recentEvents.count { Double.parseDouble(it.value.replace("%", "")) <= notHumidEnough } > 1
+	def alreadySentSms = recentEvents.count { Double.parseDouble(it.value.replace("%", "")) >= humidity1 } > 1 || recentEvents.count { Double.parseDouble(it.value.replace("%", "")) <= humidity2 } > 1
     
 	if (currentHumidity >= tooHumid) {
 		log.debug "Checking how long the humidity sensor has been reporting >= ${tooHumid}"

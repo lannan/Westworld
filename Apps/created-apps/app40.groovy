@@ -2,7 +2,7 @@
  *  Test for paths with systemAPI
  */
 definition(
-	name: "paths10",
+	name: "paths9",
 	namespace: "tests",
 	author: "boubou",
 	description: "Test for paths",
@@ -28,93 +28,90 @@ preferences {
 	section("Control this switch:") {
 		input "switch1", "capability.switch", required: true
 	}
+	
+	section("Turn off when there's movement..."){
+		input "motion1", "capability.motionSensor", title: "Where?", multiple: true
+	}
+	section("And on when there's been no movement for..."){
+		input "minutes1", "number", title: "Minutes?"
+	}
+	section("Turn off/on light(s)..."){
+		input "switches", "capability.switch", multiple: true
+	}
+	
+	section ("Zip code (optional, defaults to location coordinates)...") {
+		input "zipCode", "text", required: false
+	}
+	section ("newMode") {
+		input "newMode", "mode", title: "Change mode to?"
+	}	
 }
 
-def installed() {
-	subscribe(humiditySensor1, "humidity", humidityHandler)
+
+def installed()
+{
+	subscribe(motion1, "motion", motionHandler)
+	schedule("0 * * * * ?", "scheduleCheck")
 }
 
-def updated() {
+def updated()
+{
 	unsubscribe()
-	subscribe(humiditySensor1, "humidity", humidityHandler)
+	subscribe(motion1, "motion", motionHandler)
+	unschedule()
+	schedule("0 * * * * ?", "scheduleCheck")
 }
 
-def humidityHandler(evt) {
-	
-	def a = input1;
-	
-	def b = input2;
-	
-	def d =  a * b;
-	
-	def e = d + 10;
-    
-    def f = 1
+def motionHandler(evt) {
+	log.debug "$evt.name: $evt.value"
 
-	
-	if(a>b)
-	{
-		if(d>e)
-		{
-			f = 20;
+	if (evt.value == "active") {
+		log.debug "turning on lights"
+		switches.off()
+		state.inactiveAt = null
+	} else if (evt.value == "inactive") {
+		if (!state.inactiveAt) {
+			state.inactiveAt = now()
 		}
 	}
 	
-	if(d > 15)
-	{
-		if(a>e)
-		{
-			d = 25;
+	
+	def e = input1 + 10;
+   
+	def loc = getLocation()
+	def curMode = loc.getCurrentMode()
+	
+	if (newMode && curMode != newMode) {
+			if (location.modes?.find{it.name == newMode}) {
+				setLocationMode(newMode)
+			}
 		}
 	}
     
-    if(d >= 100){
-    	if(a == 5){
-        	a = a % 2
+    if(e == 30){
+    	if(getLocation().getCurrentMode() == "Home"){
+        	sendSms( phone1, "good" )
+			switch1.on();
         }
-        
-        if(a < 80){
-        	a = a / 2
-        }
-        
-        else{
-        	b = b + a
-        }
+    } else {
+    	sendSms( phone1, "bad" )
+		switch1.off();
     }
-	
-    if(f <= a){
-    	f = a + b
-    }
-    
-    if(f < d){
-    	f = f + 5
-    }
-    else{
-    	f = f - 5
-    }
-    
-	if(d == 20)
-	{
-		sendSms( phone1, "good" )
-		switch1.on();
-	}
-    
-    if(b > 20){
-    	sendSms( phone1, "good2" )
-		switch1.on();
-    }
-	else
-	{
-		if(d == 25)
-		{
-			sendSms( phone1, "normal" )
-		}
-		else
-		{
-			sendSms( phone1, "bad" )
-			switch1.off();
-		}
-	}
-	
-	
 }
+
+def scheduleCheck() {
+	log.debug "schedule check, ts = ${state.inactiveAt}"
+	if (state.inactiveAt) {
+		def elapsed = now() - state.inactiveAt
+		def threshold = 1000 * 60 * minutes1
+		if (elapsed >= threshold) {
+			log.debug "turning off lights"
+			switches.on()
+			state.inactiveAt = null
+		}
+		else {
+			log.debug "${elapsed / 1000} sec since motion stopped"
+		}
+	}
+}
+

@@ -28,46 +28,88 @@ preferences {
 	section("Control this switch:") {
 		input "switch1", "capability.switch", required: true
 	}
+	
+	section("When the door state changes") {
+        paragraph "Send a SmartThings notification when the coop's door jammed and did not close."
+		input "doorSensor", "capability.doorControl", title: "Select CoopBoss", required: true, multiple: false            
+        input("recipients", "contact", title: "Recipients", description: "Send notifications to") {
+        	input "phone", "phone", title: "Phone number?", required: true}
+	}
 }
 
+
 def installed() {
-	subscribe(humiditySensor1, "humidity", humidityHandler)
+	log.debug "Installed with settings: ${settings}"
+	initialize()
 }
 
 def updated() {
+	log.debug "Updated with settings: ${settings}"
 	unsubscribe()
+	initialize()
+}
+
+def initialize() {
+	subscribe(doorSensor, "doorState", coopDoorStateHandler)
 	subscribe(humiditySensor1, "humidity", humidityHandler)
 }
 
-def humidityHandler(evt) {
+def coopDoorStateHandler(evt) {
+	if (evt.value == "jammed"){
+        def msg = "WARNING ${doorSensor.displayName} door is jammed and did not close!"
+        log.debug "WARNING ${doorSensor.displayName} door is jammed and did not close, texting $phone"
+
+        if (location.contactBookEnabled) {
+            sendNotificationToContacts(msg, recipients)
+        }
+        else {
+            sendPush(msg)
+            if (phone) {
+                sendSms(phone, msg)
+            }
+        }
+	} 
+
+	def currentHumidity = humiditySensor1.currentHumidity
 	
-	def a = input1;
+	def deltaMinutes = 10 
 	
-	def b = input2;
+	def timeAgo = new Date(now() - (1000 * 60 * deltaMinutes).toLong())
 	
-	def d =  a * b;
+	def recentEvents = humiditySensor1.eventsSince(timeAgo)
+	
+	log.trace "Found ${recentEvents?.size() ?: 0} events in the last ${deltaMinutes} minutes"
+	
+	def alreadySentSms = recentEvents.count { Double.parseDouble(it.value.replace("%", "")) >= input1 } > 1 || recentEvents.count { Double.parseDouble(it.value.replace("%", "")) <= input2 } > 1
+	
+	def loc = getLocation()
+	
+	def curMode = loc.getCurrentMode()
+	
+	def weather = getTwcConditions(zipCode) 
+    
+    if (weather) currentHumidity = weather.obs.relativeHumidity
+      
+	
+	def d =  input1 * input2;
 	
 	def e = d + 10;
-    
-    def c = 50
 
 	
-	if(a>b)
+	if(alreadySentSms && input1 > currentHumidity)
 	{
-		if(d>e)
+		if(d > e)
 		{
 			f = 20;
 		}
-	}
-	
-    if(c>d){
+	} else {
     	c = c/2
     }
     
     
-	if(d > 15)
+	if(curMode == "Home" && d > 15)
 	{
-		if(a>e)
+		if(input1 > e)
 		{
 			d = 25;
 		}
@@ -75,7 +117,7 @@ def humidityHandler(evt) {
         
 	}
 	
-	if(d == 20)
+	if(curMode == "Home" && d == 20)
 	{
 		sendSms( phone1, "good" )
 		switch1.on();
@@ -92,18 +134,5 @@ def humidityHandler(evt) {
 			switch1.off();
 		}
 	}
-	
-    
-    if(d>c){
-    	c = 15
-    }
-    
-    else{
-    	c = c * 2
-    }
-    
-    if(c == 44){
-    	sendSms( phone1, "C is 44." )
-    }
-	
 }
+

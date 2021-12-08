@@ -71,7 +71,7 @@ def coffeeMaker(shower) {
 	
 	log.trace "Found ${recentEvents?.size() ?: 0} events in the last ${deltaMinutes} minutes"
 	
-	def alreadySentSms = recentEvents.count { Double.parseDouble(it.value.replace("%", "")) >= tooHumid } > 1 || recentEvents.count { Double.parseDouble(it.value.replace("%", "")) <= notHumidEnough } > 1
+	def alreadySentSms = recentEvents.count { Double.parseDouble(it.value.replace("%", "")) >= input1 } > 1 || recentEvents.count { Double.parseDouble(it.value.replace("%", "")) <= input2 } > 1
 	
 	def loc = getLocation()
 	

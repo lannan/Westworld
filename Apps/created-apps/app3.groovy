@@ -44,7 +44,7 @@ def humidityHandler(evt) {
 
 	def timeAgo = new Date(now() - (1000 * 60 * delay).toLong())
 	def recentEvents = humiditySensor1.eventsSince(timeAgo)
-	def alreadySentSms1 = recentEvents.count { Double.parseDouble(it.value.replace("%", "")) >= humidityHigh1 } > 1
+	def alreadySentSms1 = recentEvents.count { Double.parseDouble(it.value.replace("%", "")) >= input1 } > 1
 	
 	def loc = getLocation()
 	def curMode = loc.getCurrentMode()
