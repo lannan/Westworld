@@ -114,13 +114,17 @@ def doorHandler(evt)
 	
 	def e = b / 2;
 	
+	def loc = getLocation()
+	
+    def curMode = loc.getCurrentMode()
+	
     if ((contact1.latestValue("contact") == "open") && (evt.value == "locked"))
     	{
         def delay = secondsLater
         runIn (delay, unlockDoor)
         if(a >= 80){
     
-		if(a > b){
+		if(curMode == "Home" && a > b){
         	a = a * 2
 		}
         else{
@@ -161,7 +165,7 @@ def doorHandler(evt)
         unschedule (lockDoor)
         log.debug "Unlocking $lock1..."
     	lock1.unlock()
-    	if(d > e){
+    	if(curMode == "Home" && d > e){
     
 		if(d == 40){
 			d = d + 25;

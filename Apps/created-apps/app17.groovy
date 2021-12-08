@@ -12,6 +12,7 @@
 	iconX2Url: "https://graph.api.smartthings.com/api/devices/icons/st.Weather.weather9-icn?displaySize=2x"
 )
 
+
 preferences {
 	section("When the door opens") {
 		input "contact1", "capability.contactSensor", title: "Where?"

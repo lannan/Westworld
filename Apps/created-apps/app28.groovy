@@ -1,5 +1,5 @@
 /**
- *  Test for paths with evt.value
+ *  Test for paths 
  */
 definition(
 	name: "16 paths",

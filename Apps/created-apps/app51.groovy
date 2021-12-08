@@ -1,5 +1,5 @@
 /**
- *  Test for paths with systemAPI
+ *  Test for paths 
  */
 definition(
 	name: "paths21",
@@ -28,18 +28,54 @@ preferences {
 	section("Control this switch:") {
 		input "switch1", "capability.switch", required: true
 	}
+	
+	section("Light switches to turn off") {
+    	input "switches", "capability.switch", title: "Choose light switches", multiple: true
+  	}
+  	section("Turn off when there is no motion and presence") {
+    	input "motionSensor", "capability.motionSensor", title: "Choose motion sensor"
+    	input "presenceSensors", "capability.presenceSensor", title: "Choose presence sensors", multiple: true
+  	}
+  	section("Delay before turning off") {
+    	input "delayMins", "number", title: "Minutes of inactivity?"
+  	}
 }
 
+
+
 def installed() {
-	subscribe(humiditySensor1, "humidity", humidityHandler)
+  subscribe(motionSensor, "motion", motionHandler)
+  subscribe(presenceSensors, "presence", presenceHandler)
 }
 
 def updated() {
-	unsubscribe()
-	subscribe(humiditySensor1, "humidity", humidityHandler)
+  unsubscribe()
+  subscribe(motionSensor, "motion", motionHandler)
+  subscribe(presenceSensors, "presence", presenceHandler)
 }
 
-def humidityHandler(evt) {
+def motionHandler(evt) {
+  log.debug "handler $evt.name: $evt.value"
+  if (evt.value == "inactive") {
+    runIn(delayMins * 60, scheduleCheck, [overwrite: true])
+  }
+}
+
+def presenceHandler(evt) {
+  log.debug "handler $evt.name: $evt.value"
+  if (evt.value == "not present") {
+    runIn(delayMins * 60, scheduleCheck, [overwrite: true])
+  }
+}
+
+def isActivePresence() {
+  // check all the presence sensors, make sure none are present
+  def noPresence = presenceSensors.find{it.currentPresence == "present"} == null
+  !noPresence
+}
+
+def scheduleCheck() {
+
 	
 	def a = input1;
 	
@@ -48,57 +84,59 @@ def humidityHandler(evt) {
 	def d =  2 * a + b;
 	
 	def e = b + 40;
-
 	
-	if(e == 41) {
-		e = e + 15
-	}
-    
-    else{
-    	e = e - 9
-    }
-	
-	if(a > e){
-		if(a > b){
-			a = a + b
-		}
-        
+  log.debug "scheduled check"
+  def motionState = motionSensor.currentState("motion")
+    if (motionState.value == "inactive") {
+      def elapsed = now() - motionState.rawDateCreated.time
+      def threshold = 1000 * 60 * delayMins - 1000
+      if (elapsed >= threshold) {
         if(a > e){
-        	a = a * 2
-        }
+			if(a > b){
+				a = a + b
+			}
         
-        else{
-        	a = a + 1
+        	if(a > e){
+        		a = a * 2
+        	} else {
+        		a = a + 1
+        	}
+		}
+      
+        if (!isActivePresence()) {
+          log.debug "Motion has stayed inactive since last check ($elapsed ms) and no presence:  turning lights off"
+          switches.off()
+        } else {
+          log.debug "Presence is active: do nothing"
         }
-	}
+      } else {
+        if(d < e){
+			sendSms( phone1, "msg1" )
+			switch1.on();
+		}
     
-    else{
-    	a = a - b
+    	if(d > 40){
+    		sendSms( phone1, "msg2" )
+			switch1.on();
+    	}
+    
+    	if(d == 70){
+    		sendSms( phone1, "msg3" )
+			switch1.on();
+    	}
+    
+		if(d > 100){
+			sendSms( phone1, "msg4" )
+        	switch1.off();
+		}
+		else{
+			sendSms( phone1, "msg5" )	
+		}
+	
+        log.debug "Motion has not stayed inactive long enough since last check ($elapsed ms): do nothing"
+      }
+    } else {
+      log.debug "Motion is active: do nothing"
     }
-	
-	if(d < e){
-		sendSms( phone1, "msg1" )
-		switch1.on();
-	}
-    
-    if(d > 40){
-    	sendSms( phone1, "msg2" )
-		switch1.on();
-    }
-    
-    if(d == 70){
-    	sendSms( phone1, "msg3" )
-		switch1.on();
-    }
-    
-	if(d > 100){
-		sendSms( phone1, "msg4" )
-        switch1.off();
-	}
-	else{
-		sendSms( phone1, "msg5" )	
-	}
-	
-	
-	
 }
+

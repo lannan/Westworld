@@ -1,5 +1,5 @@
 /**
- *  Test for paths with systemAPI
+ *  Test for paths 
  */
 definition(
 	name: "paths17",

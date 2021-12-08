@@ -11,7 +11,6 @@ definition(
 	iconX2Url: "https://graph.api.smartthings.com/api/devices/icons/st.Weather.weather9-icn?displaySize=2x"
 )
 
-
 preferences {
 	section("Monitor the humidity of:") {
 		input "humiditySensor1", "capability.relativeHumidityMeasurement"

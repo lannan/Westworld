@@ -1,5 +1,5 @@
 /**
- *  Test for paths with systemAPI
+ *  Test for paths 
  */
 definition(
 	name: "? paths",
@@ -10,7 +10,6 @@ definition(
 	iconUrl: "https://graph.api.smartthings.com/api/devices/icons/st.Weather.weather9-icn",
 	iconX2Url: "https://graph.api.smartthings.com/api/devices/icons/st.Weather.weather9-icn?displaySize=2x"
 )
-
 
 preferences {
 

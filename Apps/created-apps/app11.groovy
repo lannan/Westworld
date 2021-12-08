@@ -3,15 +3,15 @@
  */
  
 definition(
-    name: "Working From Home",
-    namespace: "com.sudarkoff",
-    author: "George Sudarkoff",
-    description: "If after a particular time of day a certain person is still at home, trigger a 'Working From Home' action.",
-    category: "Mode Magic",
-    iconUrl: "https://s3.amazonaws.com/smartapp-icons/ModeMagic/Cat-ModeMagic.png",
-    iconX2Url: "https://s3.amazonaws.com/smartapp-icons/ModeMagic/Cat-ModeMagic@2x.png",
-    pausable: true
+	name: "? paths",
+	namespace: "tests",
+	author: "boubou",
+	description: "Test for paths",
+	category: "Convenience",
+	iconUrl: "https://graph.api.smartthings.com/api/devices/icons/st.Weather.weather9-icn",
+	iconX2Url: "https://graph.api.smartthings.com/api/devices/icons/st.Weather.weather9-icn?displaySize=2x"
 )
+
 
 preferences {
     page (name:"configActions")
