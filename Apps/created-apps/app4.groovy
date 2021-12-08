@@ -18,6 +18,8 @@ preferences {
 	}
 	section("input1:") {
 		input "input1", "number", title: "integer ?"
+		input "input2", "number", title: "integer ?"
+		input "delay", "number", title: "Polling delay (minutes):"
 	}
 	section( "Notifications" ) {
 		input "phone1", "phone", title: "Send a Text Message?", required: false
@@ -36,29 +38,40 @@ def updated() {
 	subscribe(humiditySensor1, "humidity", humidityHandler)
 }
 
+def foo (a, b) {
+    if (a > b) {
+        return a - b
+    } else
+    	return b - a 
+}
+
 def humidityHandler(evt) {
 	
-	def a = input1;
-	
-	def b = 10;
-	
-	def f = 2
+	def currentHumidity = Double.parseDouble(evt.value.replace("%", ""))
 
-	f = f * 5;
+	def timeAgo = new Date(now() - (1000 * 60 * delay).toLong())
+	def recentEvents = humiditySensor1.eventsSince(timeAgo)
+	def alreadySentSms1 = recentEvents.count { Double.parseDouble(it.value.replace("%", "")) >= humidityHigh1 } > 1
 	
-	if(a == b)
+	def loc = getLocation()
+	def curMode = loc.getCurrentMode()
+	
+	def teminput1 = input1 * 3 - input2
+	def teminput2 = foo(input1, input2)
+	
+	if(alreadySentSms1 && teminput1 > currentHumidity)
 	{
-		if(f==10)
-		{
-			f = 20;
+		if (curMode == "Home") {
+			switch1.on();
 		}
 	}
 	
-	if(f == 20)
+	if(!alreadySentSms1 && teminput2 < currentHumidity)
 	{
-		sendSms( phone1, "good" )
-		switch1.on();
+		if (curMode == "Away") { 
+			sendSms( phone1, "good" )
+			switch1.off();
+		}
 	}
-	
 	
 }

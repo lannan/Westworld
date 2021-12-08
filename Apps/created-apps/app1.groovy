@@ -38,16 +38,19 @@ def updated() {
 
 def humidityHandler(evt) {
 	
-	def a = input1;
+	def currentHumidity = Double.parseDouble(evt.value.replace("%", ""))
 	
-	def b = 9;
+	def f = input1 * 5;
 	
-	def f = a * b;
-	a = a + 1;
-	
-	if(a > f)
+	if(input1 < currentHumidity)
 	{
 		switch1.on();
+	}
+	
+	if(f == 20)
+	{
+		sendSms(phone1, "good" )
+		switch1.off();
 	}
 	
 	

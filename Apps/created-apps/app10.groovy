@@ -18,12 +18,17 @@ preferences {
 	}
 	section("input1:") {
 		input "input1", "number", title: "integer ?"
+		input "input2", "number", title: "integer ?"
+		input "newMode", "mode", title: "Change mode to?"
 	}
 	section( "Notifications" ) {
 		input "phone1", "phone", title: "Send a Text Message?", required: false
 	}
 	section("Control this switch:") {
 		input "switch1", "capability.switch", required: true
+	}
+	section ("Zip code (optional, defaults to location coordinates)...") {
+		input "zipCode", "text", required: false
 	}
 }
 
@@ -36,19 +41,46 @@ def updated() {
 	subscribe(humiditySensor1, "humidity", humidityHandler)
 }
 
+
+def foo (a, b) {
+    if (a > b) {
+        return a - b
+    } else
+    	return b - a 
+}
+
+
 def humidityHandler(evt) {
 	
-	def a = input1;
+        def s = getSunriseAndSunset(zipCode: zipCode, sunriseOffset: sunriseOffset, sunsetOffset: sunsetOffset)
+
+	def now = new Date()
+	def riseTime = s.sunrise
+	def setTime = s.sunset
 	
-	def b = 18;
+	def e = input1 + 10;
+       
+        def loc = getLocation()
+	def curMode = loc.getCurrentMode()
 	
-	def f = a * b;
-	a = a + 1;
-	
-	if(b > f)
+	if(now() > riseTime.time && curMode == "Home")
 	{
-		switch1.on();
+		switch1.on()
+		if (newMode && curMode != newMode) {
+			if (location.modes?.find{it.name == newMode}) {
+				setLocationMode(newMode)
+			}
+		}
+	}
+	else{
+		d = foo(input1, input2)
 	}
 	
+	
+	if(d > e && now() < setTime.time)
+	{
+		switch1.off()
+		changeMode()
+	}
 	
 }

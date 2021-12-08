@@ -2,7 +2,7 @@
  *  Test for paths with systemAPI
  */
 definition(
-	name: "? paths",
+	name: "paths11",
 	namespace: "tests",
 	author: "boubou",
 	description: "Test for paths",
@@ -18,12 +18,17 @@ preferences {
 	}
 	section("input1:") {
 		input "input1", "number", title: "integer ?"
+		input "input2", "number", title: "integer ?"
+		input "newMode", "mode", title: "Change mode to?"
 	}
 	section( "Notifications" ) {
 		input "phone1", "phone", title: "Send a Text Message?", required: false
 	}
 	section("Control this switch:") {
 		input "switch1", "capability.switch", required: true
+	}
+	section ("Zip code (optional, defaults to location coordinates)...") {
+		input "zipCode", "text", required: false
 	}
 }
 
@@ -36,23 +41,39 @@ def updated() {
 	subscribe(humiditySensor1, "humidity", humidityHandler)
 }
 
+def changeMode() {
+	if (newMode && location.mode != newMode) {
+		if (location.modes?.find{it.name == newMode}) {
+			setLocationMode(newMode)
+		}
+	}
+}
+
 def humidityHandler(evt) {
+
+       def s = getSunriseAndSunset(zipCode: zipCode, sunriseOffset: sunriseOffset, sunsetOffset: sunsetOffset)
+
+	def now = new Date()
+	def riseTime = s.sunrise
+	def setTime = s.sunset
 	
-	def a = input1;
+	def e = input1 + 10;
+
 	
-	def b = 3;
-	
-	def f = a * b;
-	
-	if(a == f)
+	if(now() > riseTime.time)
 	{
-		switch1.on();
+		switch1.on()
+		changeMode()
+	}
+	else{
+		d = d + 20
 	}
 	
-	if(f == 20)
+	
+	if(d > e)
 	{
-		sendSms( phone1, "good" )
-		switch1.on();
+		switch1.off()
+		changeMode()
 	}
 	
 	

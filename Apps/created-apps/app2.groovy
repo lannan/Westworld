@@ -18,6 +18,8 @@ preferences {
 	}
 	section("input1:") {
 		input "input1", "number", title: "integer ?"
+		input "input2", "number", title: "integer ?"
+		input "delay", "number", title: "Polling delay (minutes):"
 	}
 	section( "Notifications" ) {
 		input "phone1", "phone", title: "Send a Text Message?", required: false
@@ -38,21 +40,28 @@ def updated() {
 
 def humidityHandler(evt) {
 	
-	def a = input1;
+	def currentHumidity = Double.parseDouble(evt.value.replace("%", ""))
+
+	def timeAgo = new Date(now() - (1000 * 60 * delay).toLong())
+	def recentEvents = humiditySensor1.eventsSince(timeAgo)
+	def alreadySentSms1 = recentEvents.count { Double.parseDouble(it.value.replace("%", "")) >= humidityHigh1 } > 1
 	
-	def b = 5;
+	def loc = getLocation()
+	def curMode = loc.getCurrentMode()
 	
-	def f = a * b;
-	
-	if(a < f)
+	if(alreadySentSms1 && input1 > currentHumidity)
 	{
-		switch1.on();
+		if (curMode == "Home") {
+			switch1.on();
+		}
 	}
 	
-	if(f == 20)
+	if(!alreadySentSms1 && input2 < currentHumidity)
 	{
-		sendSms( phone1, "good" )
-		switch1.on();
+		if (curMode == "Away") { 
+			sendSms( phone1, "good" )
+			switch1.off();
+		}
 	}
 	
 	

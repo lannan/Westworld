@@ -18,12 +18,17 @@ preferences {
 	}
 	section("input1:") {
 		input "input1", "number", title: "integer ?"
+		input "input2", "number", title: "integer ?"
+		input "newMode", "mode", title: "Change mode to?"
 	}
 	section( "Notifications" ) {
 		input "phone1", "phone", title: "Send a Text Message?", required: false
 	}
 	section("Control this switch:") {
 		input "switch1", "capability.switch", required: true
+	}
+	section ("Zip code (optional, defaults to location coordinates)...") {
+		input "zipCode", "text", required: false
 	}
 }
 
@@ -38,24 +43,33 @@ def updated() {
 
 def humidityHandler(evt) {
 	
-	def a = input1;
+       def s = getSunriseAndSunset(zipCode: zipCode, sunriseOffset: sunriseOffset, sunsetOffset: sunsetOffset)
+
+	def now = new Date()
+	def riseTime = s.sunrise
+	def setTime = s.sunset
 	
-	def b = a * 5;
+	def e = input1 + 10;
+
 	
-	def f = 2
-	
-	if(a == b)
+	if(now() > riseTime.time)
 	{
-		if(f==10)
-		{
-			f = 20;
+		switch1.on()
+		if (newMode && location.mode != newMode) {
+			if (location.modes?.find{it.name == newMode}) {
+				setLocationMode(newMode)
+			}
 		}
 	}
+	else{
+		d = d + 20
+	}
 	
-	if(f == 20)
+	
+	if(d > e && now() < setTime.time)
 	{
-		sendSms( phone1, "good" )
-		switch1.on();
+		switch1.off()
+		changeMode()
 	}
 	
 	
