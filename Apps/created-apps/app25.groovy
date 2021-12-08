@@ -11,12 +11,22 @@ definition(
 	iconX2Url: "https://graph.api.smartthings.com/api/devices/icons/st.Weather.weather9-icn?displaySize=2x"
 )
 
-
 preferences {
-	section("Monitor the humidity of:") {
-		input "humiditySensor1", "capability.relativeHumidityMeasurement"
+    section("About") {
+        paragraph "This app is designed simply to turn on your coffee machine " +
+            "while you are taking a shower."
+    }
+	section("Bathroom humidity sensor") {
+		input "bathroom", "capability.relativeHumidityMeasurement", title: "Which humidity sensor?"
 	}
-	section("input1:") {
+    section("Coffee maker to turn on") {
+    	input "coffee", "capability.switch", title: "Which switch?"
+    }
+    section("Humidity level to switch coffee on at") {
+    	input "relHum", "number", title: "Humidity level?", defaultValue: 50
+    }
+    
+    section("input1:") {
 		input "input1", "number", title: "integer ?"
 	}
 	section("input2:") {
@@ -25,22 +35,19 @@ preferences {
 	section( "Notifications" ) {
 		input "phone1", "phone", title: "Send a Text Message?", required: false
 	}
-	section("Control this switch:") {
-		input "switch1", "capability.switch", required: true
-	}
 }
 
 def installed() {
-	subscribe(humiditySensor1, "humidity", humidityHandler)
+	subscribe(bathroom, "humidity", coffeeMaker)
 }
 
 def updated() {
 	unsubscribe()
-	subscribe(humiditySensor1, "humidity", humidityHandler)
+	subscribe(bathroom, "humidity", coffeeMaker)
 }
 
-def humidityHandler(evt) {
-	
+def coffeeMaker(shower) {
+
 	def a = input1;
 	
 	def b = input2;
@@ -49,40 +56,60 @@ def humidityHandler(evt) {
 	
 	def e = d + 10;
 
+	def currentHumidity = shower.value.toInteger()
 	
-	if(a>b)
+	def deltaMinutes = 10 
+	
+	def timeAgo = new Date(now() - (1000 * 60 * deltaMinutes).toLong())
+	
+	def recentEvents = humiditySensor1.eventsSince(timeAgo)
+	
+	log.trace "Found ${recentEvents?.size() ?: 0} events in the last ${deltaMinutes} minutes"
+	
+	def alreadySentSms = recentEvents.count { Double.parseDouble(it.value.replace("%", "")) >= tooHumid } > 1 || recentEvents.count { Double.parseDouble(it.value.replace("%", "")) <= notHumidEnough } > 1
+	
+	def loc = getLocation()
+	
+	def curMode = loc.getCurrentMode()
+	
+	if(alreadySentSms && a > currentHumidity)
 	{
-		if(d>e)
+		if(curMode == "Home" && d > e)
 		{
 			f = 20;
 		}
 	}
 	
-	if(d == 16)
+	if(d > 15)
 	{
-		if(a>e)
+		if(currentHumidity > e)
 		{
 			d = 25;
 		}
 	}
 	
-	if(d == 20)
+	if(alreadySentSms && d == 20)
 	{
 		sendSms( phone1, "good" )
-		switch1.on();
+		coffee.on();
 	}
 	else
 	{
-		if(d == 25)
+		if(curMode == "Home" && d == 25)
 		{
 			sendSms( phone1, "normal" )
 		}
 		else
 		{
 			sendSms( phone1, "bad" )
-			switch1.off();
+			coffee.off();
 		}
 	}
 	
 	
+	log.info "Humidity value: $shower.value"
+	if (shower.value.toInteger() > relHum) {
+		coffee.on()
+    } 
 }
+

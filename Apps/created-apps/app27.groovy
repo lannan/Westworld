@@ -2,7 +2,7 @@
  *  Test for paths with systemAPI
  */
 definition(
-	name: "? paths with systemAPI",
+	name: "? paths3",
 	namespace: "tests",
 	author: "boubou",
 	description: "Test for paths",
@@ -11,81 +11,115 @@ definition(
 	iconX2Url: "https://graph.api.smartthings.com/api/devices/icons/st.Weather.weather9-icn?displaySize=2x"
 )
 
-
 preferences {
-	section("Monitor the humidity of:") {
-		input "humiditySensor1", "capability.relativeHumidityMeasurement"
+    section("About") {
+        paragraph "This app is designed simply to turn on your coffee machine " +
+            "while you are taking a shower."
+    }
+	section("Bathroom humidity sensor") {
+		input "bathroom", "capability.relativeHumidityMeasurement", title: "Which humidity sensor?"
 	}
-	section("aa:") {
-		input "aa", "number", title: "integer ?"
+    section("Coffee maker to turn on") {
+    	input "coffee", "capability.switch", title: "Which switch?"
+    }
+    section("Humidity level to switch coffee on at") {
+    	input "relHum", "number", title: "Humidity level?", defaultValue: 50
+    }
+    
+    section("input1:") {
+		input "input1", "number", title: "integer ?"
 	}
-	section("bb:") {
-		input "bb", "number", title: "integer ?"
-	}
-	section("cc:") {
-		input "cc", "number", title: "integer ?"
-	}
-	section("dd:") {
-		input "dd", "number", title: "integer ?"
+	section("input2:") {
+		input "input2", "number", title: "integer ?"
 	}
 	section( "Notifications" ) {
 		input "phone1", "phone", title: "Send a Text Message?", required: false
 	}
-	section("Control this switch:") {
-		input "switch1", "capability.switch", required: false
+	
+	section ("Zip code (optional, defaults to location coordinates)...") {
+		input "zipCode", "text", required: false
 	}
+	
 }
 
 def installed() {
-	subscribe(humiditySensor1, "humidity", humidityHandler)
+	subscribe(bathroom, "humidity", coffeeMaker)
 }
 
 def updated() {
 	unsubscribe()
-	subscribe(humiditySensor1, "humidity", humidityHandler)
+	subscribe(bathroom, "humidity", coffeeMaker)
 }
 
-def humidityHandler(evt) {
+def coffeeMaker(shower) {
+
+	def a = input1;
 	
-	def a = aa;
+	def b = input2;
 	
-	def b = bb;
+	def d =  a * b;
 	
-	def d = dd;
+	def e = d + 10;
+
+	def currentHumidity = shower.value.toInteger()
 	
-	def c = cc;
+	def deltaMinutes = 10 
 	
-	def e =  Math.max(a,b);
+	def timeAgo = new Date(now() - (1000 * 60 * deltaMinutes).toLong())
 	
-	if(a>b)
+	def recentEvents = humiditySensor1.eventsSince(timeAgo)
+	
+	log.trace "Found ${recentEvents?.size() ?: 0} events in the last ${deltaMinutes} minutes"
+	
+	def alreadySentSms = recentEvents.count { Double.parseDouble(it.value.replace("%", "")) >= tooHumid } > 1 || recentEvents.count { Double.parseDouble(it.value.replace("%", "")) <= notHumidEnough } > 1
+	
+	def loc = getLocation()
+	
+	def curMode = loc.getCurrentMode()
+	
+	def weather = getTwcConditions(zipCode) 
+    
+    if (weather) currentHumidity = weather.obs.relativeHumidity
+    
+	
+	if(alreadySentSms && a > currentHumidity)
 	{
-		
-		if(a>d)
+		if(curMode == "Home" && d > e)
 		{
-			
+			f = 20;
 		}
+	}
+	
+	if(d > 15)
+	{
+		if(currentHumidity > e)
+		{
+			d = 25;
+		}
+	}
+	
+	if(alreadySentSms && d == 20)
+	{
+		sendSms( phone1, "good" )
+		coffee.on();
 	}
 	else
 	{
-		if(a>c)
+		if(curMode == "Home" && d == 25)
 		{
-			
-			if(c<e)
-			{
-				
-			}
+			sendSms( phone1, "normal" )
 		}
 		else
 		{
-			
-		}
-			
-		if(a>d)
-		{
-			
+			sendSms( phone1, "bad" )
+			coffee.off();
 		}
 	}
-
 	
 	
+	log.info "Humidity value: $shower.value"
+	if (shower.value.toInteger() > relHum) {
+		coffee.on()
+    } 
 }
+

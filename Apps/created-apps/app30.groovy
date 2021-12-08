@@ -73,6 +73,7 @@ def humidityHandler(evt) {
 		if(a>d)
 		{
 			flag = flag + 10;
+			
 			if(d<e)
 			{
 				flag = flag + 5;
