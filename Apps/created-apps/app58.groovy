@@ -2,7 +2,7 @@
  *  Test for paths with systemAPI
  */
 definition(
-	name: "paths28",
+	name: "? paths",
 	namespace: "tests",
 	author: "boubou",
 	description: "Test for paths",
@@ -13,76 +13,101 @@ definition(
 
 
 preferences {
-	section("Monitor the humidity of:") {
+  section("People to watch for?") {
+    input "people", "capability.presenceSensor", multiple: true
+  }
+
+  section("Monitor the humidity of:") {
 		input "humiditySensor1", "capability.relativeHumidityMeasurement"
-	}
-	section("input1:") {
-		input "input1", "number", title: "integer ?"
-	}
-	section("input2:") {
-		input "input2", "number", title: "integer ?"
-	}
-	section( "Notifications" ) {
-		input "phone1", "phone", title: "Send a Text Message?", required: false
-	}
-	section("Control this switch:") {
-		input "switch1", "capability.switch", required: true
-	}
+  }
+	
+  section("Front Door?") {
+    input "sensors", "capability.contactSensor", multiple: true
+  }
+
+  section("Hall Light?") {
+    input "lights", "capability.switch", title: "Switch Turned On", multilple: true
+  }
+
+  section("Presence Delay (defaults to 30s)?") {
+    input name: "presenceDelay", type: "number", title: "How Long?", required: false
+  }
+
+  section("Door Contact Delay (defaults to 10s)?") {
+    input name: "contactDelay", type: "number", title: "How Long?", required: false
+  }
+  
+  section("input1:") {
+	input "input1", "number", title: "integer ?"
+  }
+  section("input2:") {
+	input "input2", "number", title: "integer ?"
+  }
 }
 
 def installed() {
-	subscribe(humiditySensor1, "humidity", humidityHandler)
+  init()
 }
 
 def updated() {
-	unsubscribe()
-	subscribe(humiditySensor1, "humidity", humidityHandler)
+  unsubscribe()
+  init()
 }
 
-def humidityHandler(evt) {
-	
-	def a = input1;
-	
-	def b = input2;
-	
-	
-    if(a < b){
-    	a = a * 5
-	}
-    
-    if(a > b){
-    	a = b * 5
-	}
-    
-    if(b == 40){
-    	a = a + 20
-    }
-    
-    if(b == 50){
-    	a = a + 30
-	}
-    
-    if(a < b){
-    	a = a * b
-	}
-    
-    else{
-    	a = a - 15
-    }
-	
-	if(a <= 20){
-		sendSms(phone1, "msg1")
-		switch1.on()
-	}
-    
-    if(b >= 50){
-		sendSms(phone1, "msg2")
-		switch1.on()
-	}
-	else{
-		sendSms(phone1, "msg3")
-		switch1.off()
-	}
-	
-	
+def init() {
+  state.lastClosed = now()
+  subscribe(people, "presence.present", presence)
+  subscribe(sensors, "contact.open", doorOpened)
 }
+
+def foo (a, b) {
+    if (a > b) {
+        return a - b
+    } else
+    	return b - a 
+}
+
+
+def presence(evt) {
+  def delay = contactDelay ?: 10
+
+  state.lastPresence = now()
+
+  if(now() - (delay * 1000) < state.lastContact) {
+    log.info('Presence was delayed, but you probably still want the light on.')
+    lights?.on()
+  }
+  
+  	def loc = getLocation()
+	def curMode = loc.getCurrentMode()
+	
+	def teminput1 = input1 * 3 - input2
+	def teminput2 = foo(input1, input2)
+	def currentHumidity = humiditySensor1.currentValue("relativeHumidityMeasurement")
+	
+	if(teminput1 > currentHumidity)
+	{
+		if((curMode == "Home") && (f==10))
+		{
+			switch1?.off();
+		}
+	}
+	
+	if(teminput2 < 20 || curMode == "Away")
+	{
+		sendSms( phone1, "good" )
+		switch1?.on();
+	}
+}
+
+def doorOpened(evt) {
+  def delay = presenceDelay ?: 30
+
+  state.lastContact = now()
+
+  if(now() - (delay * 1000) < state.lastPresence) {
+    log.info('Welcome home!  Let me get that light for you.')
+    lights?.on()
+  }
+}
+

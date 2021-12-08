@@ -13,64 +13,87 @@ definition(
 
 
 preferences {
-	section("Monitor the humidity of:") {
-		input "humiditySensor1", "capability.relativeHumidityMeasurement"
-	}
-	section("input1:") {
-		input "input1", "number", title: "integer ?"
-	}
-	section("input2:") {
-		input "input2", "number", title: "integer ?"
-	}
-	section( "Notifications" ) {
-		input "phone1", "phone", title: "Send a Text Message?", required: false
-	}
-	section("Control this switch:") {
-		input "switch1", "capability.switch", required: true
-	}
+  section("People to watch for?") {
+    input "people", "capability.presenceSensor", multiple: true
+  }
+
+  section("Front Door?") {
+    input "sensors", "capability.contactSensor", multiple: true
+  }
+
+  section("Hall Light?") {
+    input "lights", "capability.switch", title: "Switch Turned On", multilple: true
+  }
+
+  section("Presence Delay (defaults to 30s)?") {
+    input name: "presenceDelay", type: "number", title: "How Long?", required: false
+  }
+
+  section("Door Contact Delay (defaults to 10s)?") {
+    input name: "contactDelay", type: "number", title: "How Long?", required: false
+  }
+  
+  section("input1:") {
+	input "input1", "number", title: "integer ?"
+  }
+  section("input2:") {
+	input "input2", "number", title: "integer ?"
+  }
 }
 
 def installed() {
-	subscribe(humiditySensor1, "humidity", humidityHandler)
+  init()
 }
 
 def updated() {
-	unsubscribe()
-	subscribe(humiditySensor1, "humidity", humidityHandler)
+  unsubscribe()
+  init()
 }
 
-def humidityHandler(evt) {
+def init() {
+  state.lastClosed = now()
+  subscribe(people, "presence.present", presence)
+  subscribe(sensors, "contact.open", doorOpened)
+}
+
+def presence(evt) {
+  def delay = contactDelay ?: 10
+
+  state.lastPresence = now()
+
+  if(now() - (delay * 1000) < state.lastContact) {
+    log.info('Presence was delayed, but you probably still want the light on.')
+    lights?.on()
+  }
+  
+  	def loc = getLocation()
+	def curMode = loc.getCurrentMode()
 	
-	def a = input1;
+	def f = input1 - input2;
 	
-	def b = input2;
-	
-	def f = a + b;
-	
-	f = f * 5;
-	
-	def g = evt.value
-	
-	if(f>b)
+	if(input1 > f)
 	{
-		if(f == 10)
+		if((curMode == "Home") && (f==10))
 		{
 			f = 20;
 		}
-		if(g == "25") 
-		{
-			f = 25;
-		}
 	}
 	
-	if(f == 20)
+	if((f == 20) || curMode == "Away")
 	{
 		sendSms( phone1, "good" )
-		switch1.on();
+		switch1?.on();
 	}
-	else
-	{
-	}
-	
-	
 }
+
+def doorOpened(evt) {
+  def delay = presenceDelay ?: 30
+
+  state.lastContact = now()
+
+  if(now() - (delay * 1000) < state.lastPresence) {
+    log.info('Welcome home!  Let me get that light for you.')
+    lights?.on()
+  }
+}
+

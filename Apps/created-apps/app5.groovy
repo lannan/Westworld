@@ -38,6 +38,13 @@ def updated() {
 	subscribe(humiditySensor1, "humidity", humidityHandler)
 }
 
+def foo (a, b) {
+    if (a > b) {
+        return a - b
+    } else
+    	return b - a 
+}
+
 def humidityHandler(evt) {
 	
 	def currentHumidity = Double.parseDouble(evt.value.replace("%", ""))
